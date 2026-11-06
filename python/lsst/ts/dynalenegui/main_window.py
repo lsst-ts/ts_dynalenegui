@@ -215,7 +215,6 @@ class MainWindow(QMainWindow):
         self.timer.start(1000)
         self.update_clock()
 
-    # Handle double-clicked item in command list
     def _handle_show_tab(self, item: QListWidgetItem) -> None:
         """Show the window of the double-clicked item.
         Parameters
