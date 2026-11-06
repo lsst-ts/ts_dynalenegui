@@ -224,3 +224,6 @@ __marimo__/
 .mypy.ini
 .clang-format
 .ruff.toml
+
+python/lsst/ts/dynalenegui/version.py
+.LICENSE.txt

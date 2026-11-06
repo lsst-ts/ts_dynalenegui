@@ -2,7 +2,11 @@
 # - Any package whose API is used directly should be listed explicitly.
 # - Common third-party packages (e.g. PySide6) are provided by the
 #   conda environment and do not need to be listed.
+setupRequired(ts_guitool)
+
 
 # The following is boilerplate for all packages.
 envPrepend(PYTHONPATH, ${PRODUCT_DIR}/python)
 envPrepend(PATH, ${PRODUCT_DIR}/bin)
+
+
