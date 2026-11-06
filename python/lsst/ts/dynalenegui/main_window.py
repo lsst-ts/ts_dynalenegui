@@ -1,6 +1,6 @@
 # This file is part of ts_dynalenegui.
 #
-# Developed for the Vera Rubin Observatory Systems.
+# Developed for the Vera C. Rubin Observatory Telescope and Site Systems.
 # This product includes software developed by the LSST Project
 # (https://www.lsst.org).
 # See the COPYRIGHT file at the top-level directory of this distribution
@@ -13,11 +13,11 @@
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 __all__ = ["MainWindow"]
 
@@ -25,18 +25,34 @@ import sys
 
 from PySide6.QtCore import QDateTime, Qt, QTimer
 from PySide6.QtWidgets import (
-    QApplication,
     QComboBox,
     QFormLayout,
-    QGroupBox,
     QHBoxLayout,
-    QLabel,
     QListWidget,
+    QListWidgetItem,
     QMainWindow,
     QMessageBox,
     QPushButton,
     QVBoxLayout,
     QWidget,
+)
+
+from lsst.ts.guitool import TabTemplate, create_group_box, create_label
+
+from .tab import (
+    TabAirHandling,
+    TabAlarms,
+    TabCabinetManagement,
+    TabChillersPumps,
+    TabCommand,
+    TabConfigurations,
+    TabErrors,
+    TabGeneralCommands,
+    TabLogs,
+    TabPid,
+    TabSensors,
+    TabThermalSummary,
+    TabUserInterface,
 )
 
 
@@ -105,25 +121,25 @@ class MainWindow(QMainWindow):
         """)
 
         # Date and Time Container
-        date_time_group = QGroupBox()
-        date_time_layout = QFormLayout(date_time_group)
-        date_time_layout.setLabelAlignment(Qt.AlignLeft)
+        date_time_layout = QFormLayout()
+        date_time_group = create_group_box("", date_time_layout)
 
-        self.date_label = QLabel()
-        self.time_label = QLabel()
+        self.date_label = create_label()
+        self.time_label = create_label()
 
         date_time_layout.addRow("Date:", self.date_label)
         date_time_layout.addRow("Time:", self.time_label)
+        date_time_layout.setLabelAlignment(Qt.AlignLeft)
 
         # Summary Container
-        summary_group = QGroupBox("Summary")
-        summary_layout = QFormLayout(summary_group)
+        summary_layout = QFormLayout()
+        summary_group = create_group_box("Summary", summary_layout)
         summary_layout.setLabelAlignment(Qt.AlignLeft)
 
         # System Status Text + Status Light Container
-        self.system_state = QLabel("INITIALIZED")
+        self.system_state = create_label("INITIALIZED")
 
-        self.status_light = QLabel()
+        self.status_light = create_label()
         self.status_light.setObjectName("status_light")
         self.status_light.setFixedSize(60, 16)  # Width, Height
 
@@ -137,7 +153,7 @@ class MainWindow(QMainWindow):
         status_layout.addStretch()  # Keeps light next to the text
 
         # User Profile and Dropdown
-        self.selected_user = QLabel("Operator")
+        self.selected_user = create_label("Operator")
         self.select_user = QComboBox()
         self.select_user.addItems(["Operator", "Engineer", "Admin"])
 
@@ -150,25 +166,29 @@ class MainWindow(QMainWindow):
         self.switch_user = QPushButton("Switch User")
         self.logout = QPushButton("Logout")
 
-        # Command / Action List Box
-        self.command_list = QListWidget()
-        commands = [
-            "General Commands",
-            "Commands",
-            "Alarms",
-            "Cabinet Management",
-            "Thermal Summary",
-            "User Interface (UI)",
-            "Air Handling",
-            "PID",
-            "Sensors",
-            "Chillers & Pumps",
-            "Configurations",
-            "Errors",
-            "Logs",
+        # Command List
+        tabs: list[TabTemplate] = [
+            TabGeneralCommands("General Commands"),
+            TabCommand("Commands"),
+            TabAlarms("Alarms"),
+            TabCabinetManagement("Cabinet Management"),
+            TabThermalSummary("Thermal Summary"),
+            TabUserInterface("User Interface (UI)"),
+            TabAirHandling("Air Handling"),
+            TabPid("PID"),
+            TabSensors("Sensors"),
+            TabChillersPumps("Chillers & Pumps"),
+            TabConfigurations("Configurations"),
+            TabErrors("Errors"),
+            TabLogs("Logs"),
         ]
-        self.command_list.addItems(commands)
+
+        self._tabs = {tab.windowTitle(): tab for tab in tabs}
+
+        self.command_list = QListWidget()
+        self.command_list.addItems(list(self._tabs))
         self.command_list.setCurrentRow(0)
+        self.command_list.itemDoubleClicked.connect(self._handle_show_tab)
 
         # Connect signals
         self.switch_user.clicked.connect(self.handle_switch_user)
@@ -194,6 +214,21 @@ class MainWindow(QMainWindow):
         self.timer.timeout.connect(self.update_clock)
         self.timer.start(1000)
         self.update_clock()
+
+    # Handle double-clicked item in command list
+    def _handle_show_tab(self, item: QListWidgetItem) -> None:
+        """Show the window of the double-clicked item.
+        Parameters
+        ----------
+        item : `PySide6.QtWidgets.QListWidgetItem`
+            Double-clicked item.
+        """
+        tab = self._tabs.get(item.text())
+        if tab is None:
+            print(f"Not implemented yet: {item.text()}")
+            return
+        tab.show()
+        tab.raise_()
 
     def update_clock(self) -> None:
         now = QDateTime.currentDateTime()
@@ -256,10 +291,3 @@ class MainWindow(QMainWindow):
         """Show the application settings."""
 
         print("Settings action triggered")
-
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = MainWindow()
-    window.show()
-    app.exec()
