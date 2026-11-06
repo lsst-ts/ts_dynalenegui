@@ -1,6 +1,6 @@
-.. py:currentmodule:: lsst.ts.mtdynalenegui
+.. py:currentmodule:: lsst.ts.dynalenegui
 
-.. _lsst.ts.mtdynalenegui-version_history:
+.. _lsst.ts.dynalenegui-version_history:
 
 ##################
 Version History
