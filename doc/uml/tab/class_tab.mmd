@@ -1,0 +1,34 @@
+classDiagram
+
+namespace guitool {
+  class TabTemplate
+}
+
+class TabGeneralCommands
+class TabCommand
+class TabAlarms
+class TabCabinetManagement
+class TabThermalSummary
+class TabUserInterface
+class TabAirHandling
+class TabPid
+class TabSensors
+class TabChillersPumps
+class TabConfigurations
+class TabErrors
+class TabLogs
+
+TabTemplate <|-- TabGeneralCommands
+TabTemplate <|-- TabCommand
+TabTemplate <|-- TabAlarms
+TabTemplate <|-- TabCabinetManagement
+TabTemplate <|-- TabThermalSummary
+TabTemplate <|-- TabUserInterface
+TabTemplate <|-- TabAirHandling
+TabTemplate <|-- TabPid
+TabTemplate <|-- TabSensors
+TabTemplate <|-- TabChillersPumps
+TabTemplate <|-- TabConfigurations
+TabTemplate <|-- TabErrors
+TabTemplate <|-- TabLogs
+

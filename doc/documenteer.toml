@@ -1,0 +1,11 @@
+[project]
+title = "DynaleneGUI"
+copyright = "2019-2025 Association of Universities for Research in Astronomy, Inc. (AURA)"
+
+[project.python]
+package = "ts_dynalenegui"
+documentation_url_key = "documentation"
+github_url_key = "repository"
+
+[sphinx.intersphinx.projects]
+python = "https://docs.python.org/3.13/"
