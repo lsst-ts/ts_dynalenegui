@@ -1,5 +1,16 @@
 .. py:currentmodule:: lsst.ts.dynalenegui
 
+.. _lsst.ts.dynalenegui-0.3.0:
+
+-------------
+0.3.0
+-------------
+
+* Add the ``Jenkinsfile``.
+* Add the documentation published to https://ts-dynalenegui.lsst.io.
+* Use **Mermaid** for the class diagrams.
+* Move the ``version_history.rst`` into the ``doc/`` directory.
+
 .. _lsst.ts.dynalenegui-version_history:
 
 ##################
