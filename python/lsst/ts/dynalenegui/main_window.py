@@ -62,7 +62,6 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Dynalene Control")
         self.setMinimumSize(300, 560)  # width, height
 
-        # Disable maximize and minimize buttons
         self.setWindowFlags(
             Qt.WindowType.Window
             | Qt.WindowType.WindowMinimizeButtonHint
@@ -71,7 +70,6 @@ class MainWindow(QMainWindow):
 
         self._add_tool_bar()
 
-        # Style sheet to mimic classic native desktop look
         self.setStyleSheet("""
             QMainWindow {
                 background-color: #e8e8e8;
@@ -158,11 +156,13 @@ class MainWindow(QMainWindow):
 
     def _callback_show_tab(self, item: QListWidgetItem) -> None:
         """Show the window of the double-clicked item.
+
         Parameters
         ----------
         item : `PySide6.QtWidgets.QListWidgetItem`
             Double-clicked item.
         """
+
         tab = self._tabs.get(item.text())
         if tab is None:
             print(f"Not implemented yet: {item.text()}")
@@ -192,13 +192,13 @@ class MainWindow(QMainWindow):
 
         reply = QMessageBox.question(
             self,
-            "Exit Confirmation",  # Window Tittle
+            "Exit Confirmation",  # Window Title
             "Are you sure you want to exit?",  # Message Text
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             defaultButton=QMessageBox.StandardButton.No,  # Default focused button
         )
 
-        # Check wich button the user clicked
+        # Check which button the user clicked
         if reply == QMessageBox.StandardButton.Yes:
             print("Exiting...")
             sys.exit()
