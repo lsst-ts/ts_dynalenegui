@@ -22,7 +22,9 @@
 __all__ = ["MainWindow"]
 
 import logging
+import pathlib
 import sys
+from datetime import datetime
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -55,13 +57,49 @@ from .tab import (
 
 
 class MainWindow(QMainWindow):
-    """Main window of the Dynalene GUI."""
+    """Main window of the Dynalene GUI.
 
-    def __init__(self) -> None:
+    Parameters
+    ----------
+    is_output_log_to_file : `bool`
+        Is outputting the log messages to file or not.
+    is_output_log_on_screen : `bool`
+        Is outputting the log messages on screen or not.
+    log : `logging.Logger` or None, optional
+        A logger. If None, a logger will be instantiated. (the default is
+        None)
+    log_level : `int`, optional
+        Logging level. (the default is `logging.WARN`)
+
+    Attributes
+    ----------
+    log : `logging.Logger`
+        A logger.
+    """
+
+    def __init__(
+        self,
+        is_output_log_to_file: bool,
+        is_output_log_on_screen: bool,
+        log: logging.Logger | None = None,
+        log_level: int = logging.WARN,
+    ) -> None:
         super().__init__()
+
+        # Set the logger
+        message_format = "%(asctime)s, %(levelname)s, %(message)s"
+        self.log = self._set_log(
+            message_format,
+            is_output_log_to_file,
+            is_output_log_on_screen,
+            log_level,
+            log=log,
+        )
+
         self.setWindowTitle("Dynalene Control")
         self.setMinimumSize(300, 560)  # width, height
 
+        # Disable the Qt close button
         self.setWindowFlags(
             Qt.WindowType.Window
             | Qt.WindowType.WindowMinimizeButtonHint
@@ -117,7 +155,7 @@ class MainWindow(QMainWindow):
         """)
 
         # Control Panel
-        self._control_panel = ControlPanel(logging.getLogger())
+        self._control_panel = ControlPanel(self.log)
 
         # Command List
         tabs: list[TabTemplate] = [
@@ -154,6 +192,83 @@ class MainWindow(QMainWindow):
         container.setLayout(main_layout)
         self.setCentralWidget(container)
 
+    def _set_log(
+        self,
+        message_format: str,
+        is_output_log_to_file: bool,
+        is_output_log_on_screen: bool,
+        level: int,
+        log: logging.Logger | None = None,
+    ) -> logging.Logger:
+        """Set the logger.
+
+        Parameters
+        ----------
+        message_format : `str`
+            Format of the message.
+        is_output_log_to_file : `bool`
+            Is outputting the log messages to file or not.
+        is_output_log_on_screen : `bool`
+            Is outputting the log messages on screen or not.
+        level : `int`
+            Logging level.
+        log : `logging.Logger` or None, optional
+            A logger. If None, a logger will be instantiated. (the default is
+            None)
+
+        Returns
+        -------
+        log : `logging.Logger`
+            A logger.
+        """
+
+        if log is None:
+            log = logging.getLogger(type(self).__name__)
+        else:
+            log = log.getChild(type(self).__name__)
+
+        if is_output_log_to_file:
+            logging.basicConfig(
+                filename=self._get_log_file_name(),
+                format=message_format,
+            )
+        else:
+            logging.basicConfig(
+                format=message_format,
+            )
+
+        if is_output_log_on_screen:
+            log.addHandler(logging.StreamHandler(sys.stdout))
+
+        log.setLevel(level)
+
+        return log
+
+    def _get_log_file_name(self, default_log_dir: str = "/rubin/dynalene/log") -> pathlib.Path:
+        """Get the log file name.
+
+        Parameters
+        ----------
+        default_log_dir : `str`, optional
+            Default log directory. (the default is "/rubin/dynalene/log")
+
+        Returns
+        -------
+        `pathlib.Path`
+            Log file name.
+        """
+
+        log_dir = pathlib.Path(default_log_dir)
+        if not log_dir.is_dir():
+            print(
+                (f"Default log directory: {default_log_dir} does not exist. Use the home directory instead.")
+            )
+            log_dir = pathlib.Path.home()
+
+        name = "log_%s.txt" % datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
+
+        return log_dir / name
+
     def _callback_show_tab(self, item: QListWidgetItem) -> None:
         """Show the window of the double-clicked item.
 
@@ -165,7 +280,7 @@ class MainWindow(QMainWindow):
 
         tab = self._tabs.get(item.text())
         if tab is None:
-            print(f"Not implemented yet: {item.text()}")
+            self.log.warning(f"Not implemented yet: {item.text()}")
             return
         tab.show()
         tab.raise_()
@@ -200,22 +315,20 @@ class MainWindow(QMainWindow):
 
         # Check which button the user clicked
         if reply == QMessageBox.StandardButton.Yes:
-            print("Exiting...")
+            self.log.info("Exiting the application.")
             sys.exit()
-        else:
-            print("Not exiting...")
 
     def _callback_connect(self) -> None:
         """Connect to the dynalene controller."""
 
-        print("Connect action triggered")
+        self.log.info("Connect action triggered.")
 
     def _callback_disconnect(self) -> None:
         """Disconnect from the dynalene controller."""
 
-        print("Disconnect action triggered")
+        self.log.info("Disconnect action triggered.")
 
     def _callback_settings(self) -> None:
         """Show the application settings."""
 
-        print("Settings action triggered")
+        self.log.info("Settings action triggered.")

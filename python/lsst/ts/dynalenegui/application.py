@@ -32,6 +32,6 @@ def run_dynalenegui() -> None:
     """Run the Dynalene GUI application."""
 
     app = QApplication.instance() or QApplication(sys.argv)
-    window_main = MainWindow()
+    window_main = MainWindow(True, False)
     window_main.show()
     sys.exit(app.exec())

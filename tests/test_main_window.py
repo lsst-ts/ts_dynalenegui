@@ -21,6 +21,7 @@
 
 import pytest
 from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QToolBar
 from pytestqt.qtbot import QtBot
 
 from lsst.ts.dynalenegui import MainWindow
@@ -28,10 +29,17 @@ from lsst.ts.dynalenegui import MainWindow
 
 @pytest.fixture
 def widget(qtbot: QtBot) -> MainWindow:
-    widget = MainWindow()
+    widget = MainWindow(False, False, log_level=13)
     qtbot.addWidget(widget)
 
     return widget
+
+
+def test_init(widget: MainWindow) -> None:
+    assert widget.log.level == 13
+
+    tool_bar = widget.findChildren(QToolBar)[0]
+    assert len(tool_bar.actions()) == 4
 
 
 def test_command_list(widget: MainWindow) -> None:
