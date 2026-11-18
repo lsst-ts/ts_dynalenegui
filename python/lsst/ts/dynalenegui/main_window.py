@@ -21,24 +21,22 @@
 
 __all__ = ["MainWindow"]
 
+import logging
 import sys
 
-from PySide6.QtCore import QDateTime, Qt, QTimer
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QComboBox,
-    QFormLayout,
-    QHBoxLayout,
     QListWidget,
     QListWidgetItem,
     QMainWindow,
     QMessageBox,
-    QPushButton,
     QVBoxLayout,
     QWidget,
 )
 
-from lsst.ts.guitool import TabTemplate, create_group_box, create_label
+from lsst.ts.guitool import TabTemplate
 
+from .control_panel import ControlPanel
 from .tab import (
     TabAirHandling,
     TabAlarms,
@@ -120,51 +118,8 @@ class MainWindow(QMainWindow):
             }
         """)
 
-        # Date and Time Container
-        date_time_layout = QFormLayout()
-        date_time_group = create_group_box("", date_time_layout)
-
-        self.date_label = create_label()
-        self.time_label = create_label()
-
-        date_time_layout.addRow("Date:", self.date_label)
-        date_time_layout.addRow("Time:", self.time_label)
-        date_time_layout.setLabelAlignment(Qt.AlignLeft)
-
-        # Summary Container
-        summary_layout = QFormLayout()
-        summary_group = create_group_box("Summary", summary_layout)
-        summary_layout.setLabelAlignment(Qt.AlignLeft)
-
-        # System Status Text + Status Light Container
-        self.system_state = create_label("INITIALIZED")
-
-        self.status_light = create_label()
-        self.status_light.setObjectName("status_light")
-        self.status_light.setFixedSize(60, 16)  # Width, Height
-
-        status_container = QWidget()
-        status_layout = QHBoxLayout(status_container)
-        status_layout.setContentsMargins(0, 0, 0, 0)
-        status_layout.setSpacing(8)
-
-        status_layout.addWidget(self.system_state)
-        status_layout.addWidget(self.status_light)
-        status_layout.addStretch()  # Keeps light next to the text
-
-        # User Profile and Dropdown
-        self.selected_user = create_label("Operator")
-        self.select_user = QComboBox()
-        self.select_user.addItems(["Operator", "Engineer", "Admin"])
-
-        # Add fields to Summary box
-        summary_layout.addRow("System State:", status_container)
-        summary_layout.addRow("User Profile:", self.selected_user)
-        summary_layout.addRow("Users:", self.select_user)
-
-        # Action Buttons
-        self.switch_user = QPushButton("Switch User")
-        self.logout = QPushButton("Logout")
+        # Control Panel
+        self._control_panel = ControlPanel(logging.getLogger())
 
         # Command List
         tabs: list[TabTemplate] = [
@@ -190,30 +145,16 @@ class MainWindow(QMainWindow):
         self.command_list.setCurrentRow(0)
         self.command_list.itemDoubleClicked.connect(self._handle_show_tab)
 
-        # Connect signals
-        self.switch_user.clicked.connect(self.handle_switch_user)
-        self.logout.clicked.connect(self.handle_logout)
-
         # Main Layout
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(10, 5, 10, 10)
         main_layout.setSpacing(10)
-
-        main_layout.addWidget(date_time_group)
-        main_layout.addWidget(summary_group)
-        main_layout.addWidget(self.switch_user)
-        main_layout.addWidget(self.logout)
+        main_layout.addWidget(self._control_panel)
         main_layout.addWidget(self.command_list)
 
         container = QWidget()
         container.setLayout(main_layout)
         self.setCentralWidget(container)
-
-        # Setup clock timer
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.update_clock)
-        self.timer.start(1000)
-        self.update_clock()
 
     def _handle_show_tab(self, item: QListWidgetItem) -> None:
         """Show the window of the double-clicked item.
@@ -228,18 +169,6 @@ class MainWindow(QMainWindow):
             return
         tab.show()
         tab.raise_()
-
-    def update_clock(self) -> None:
-        now = QDateTime.currentDateTime()
-        self.date_label.setText(now.toString("MM/dd/yy"))
-        self.time_label.setText(now.toString("hh:mm AP"))
-
-    def handle_switch_user(self) -> None:
-        current_selection = self.select_user.currentText()
-        self.selected_user.setText(current_selection)
-
-    def handle_logout(self) -> None:
-        print("Logout clicked")
 
     def _add_tool_bar(self) -> None:
         """Add the tool bar."""
