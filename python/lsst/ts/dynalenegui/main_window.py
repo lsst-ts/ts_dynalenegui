@@ -143,7 +143,7 @@ class MainWindow(QMainWindow):
         self.command_list = QListWidget()
         self.command_list.addItems(list(self._tabs))
         self.command_list.setCurrentRow(0)
-        self.command_list.itemDoubleClicked.connect(self._handle_show_tab)
+        self.command_list.itemDoubleClicked.connect(self._callback_show_tab)
 
         # Main Layout
         main_layout = QVBoxLayout()
@@ -156,7 +156,7 @@ class MainWindow(QMainWindow):
         container.setLayout(main_layout)
         self.setCentralWidget(container)
 
-    def _handle_show_tab(self, item: QListWidgetItem) -> None:
+    def _callback_show_tab(self, item: QListWidgetItem) -> None:
         """Show the window of the double-clicked item.
         Parameters
         ----------
@@ -175,19 +175,19 @@ class MainWindow(QMainWindow):
 
         tool_bar = self.addToolBar("ToolBar")
 
-        action_exit = tool_bar.addAction("Exit", self._handle_exit)
+        action_exit = tool_bar.addAction("Exit", self._callback_exit)
         action_exit.setToolTip("Exit the application")
 
-        action_connect = tool_bar.addAction("Connect", self._handle_connect)
+        action_connect = tool_bar.addAction("Connect", self._callback_connect)
         action_connect.setToolTip("Connect to the dynalene controller")
 
-        action_disconnect = tool_bar.addAction("Disconnect", self._handle_disconnect)
+        action_disconnect = tool_bar.addAction("Disconnect", self._callback_disconnect)
         action_disconnect.setToolTip("Disconnect and close all tasks")
 
-        action_settings = tool_bar.addAction("Settings", self._handle_settings)
+        action_settings = tool_bar.addAction("Settings", self._callback_settings)
         action_settings.setToolTip("Show the application settings")
 
-    def _handle_exit(self) -> None:
+    def _callback_exit(self) -> None:
         """Exit the application."""
 
         reply = QMessageBox.question(
@@ -205,17 +205,17 @@ class MainWindow(QMainWindow):
         else:
             print("Not exiting...")
 
-    def _handle_connect(self) -> None:
+    def _callback_connect(self) -> None:
         """Connect to the dynalene controller."""
 
         print("Connect action triggered")
 
-    def _handle_disconnect(self) -> None:
+    def _callback_disconnect(self) -> None:
         """Disconnect from the dynalene controller."""
 
         print("Disconnect action triggered")
 
-    def _handle_settings(self) -> None:
+    def _callback_settings(self) -> None:
         """Show the application settings."""
 
         print("Settings action triggered")
