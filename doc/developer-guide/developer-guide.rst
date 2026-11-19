@@ -29,6 +29,7 @@ dynalenegui
     :caption: Class diagram of Dynalene GUI
 
 * **MainWindow** is the main window of the application. It holds the tabs that are opened from its list of windows.
+* **ControlPanel** shows the date and time, the summary of the system, and the user profile.
 * **TabTemplate** is the base class of all the tabs (from ts_guitool).
 
 .. _lsst.ts.dynalenegui-modules_dynalenegui_tab:

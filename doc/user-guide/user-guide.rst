@@ -18,6 +18,19 @@ Use the command line in terminal to run the GUI:
 
     run_dynalenegui
 
+Use the following command to see the available options:
+
+.. code:: bash
+
+    run_dynalenegui -h
+
+* ``-v``, ``--verbose``: print the log messages in the terminal.
+* ``-d``, ``--debuglevel``: `logging level <https://docs.python.org/3/library/logging.html#logging-levels>`_. The default is 20 (INFO).
+* ``--no-logfile``: do not write the log messages to a file.
+
+By default, a log file is created under the ``/rubin/dynalene/log`` directory.
+If it does not exist, the log file is created in the ``$HOME`` directory.
+
 .. _lsst.ts.dynalenegui-user_main_window:
 
 Main Window
@@ -31,9 +44,7 @@ Main Window
 From top to bottom, the main window shows:
 
 * **Tool bar**: the actions of the application (see :ref:`lsst.ts.dynalenegui-user_tool_bar`).
-* **Date and time**: the current date and time of the computer.
-* **Summary**: the system state and the current user profile.
-* **Switch User** and **Logout** buttons (see :ref:`lsst.ts.dynalenegui-user_profiles`).
+* **Control panel**: the date and time, the summary of the system, and the **Switch User** and **Logout** buttons (see :ref:`lsst.ts.dynalenegui-user_profiles`).
 * **List of windows**: double-click an item to open its window (see :ref:`lsst.ts.dynalenegui-user_windows`).
 
 Note: The system state is a placeholder until the communication with the controller is implemented.
