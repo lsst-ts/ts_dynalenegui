@@ -1,5 +1,22 @@
 .. py:currentmodule:: lsst.ts.dynalenegui
 
+.. _lsst.ts.dynalenegui-version_history:
+
+##################
+Version History
+##################
+
+.. _lsst.ts.dynalenegui-0.4.0:
+
+-------------
+0.4.0
+-------------
+
+* Move the date and time, summary and user profile widgets from **MainWindow** into the new **ControlPanel** widget.
+* Add the logging and the command line options ``-v``, ``-d`` and ``--no-logfile``.
+* Rename the callbacks of **MainWindow** to ``_callback_*()``.
+* Add the unit tests of **ControlPanel** and the application.
+
 .. _lsst.ts.dynalenegui-0.3.0:
 
 -------------
@@ -10,12 +27,6 @@
 * Add the documentation published to https://ts-dynalenegui.lsst.io.
 * Use **Mermaid** for the class diagrams.
 * Move the ``version_history.rst`` into the ``doc/`` directory.
-
-.. _lsst.ts.dynalenegui-version_history:
-
-##################
-Version History
-##################
 
 .. _lsst.ts.dynalenegui-0.2.0:
 

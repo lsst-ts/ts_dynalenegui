@@ -21,24 +21,24 @@
 
 __all__ = ["MainWindow"]
 
+import logging
+import pathlib
 import sys
+from datetime import datetime
 
-from PySide6.QtCore import QDateTime, Qt, QTimer
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QComboBox,
-    QFormLayout,
-    QHBoxLayout,
     QListWidget,
     QListWidgetItem,
     QMainWindow,
     QMessageBox,
-    QPushButton,
     QVBoxLayout,
     QWidget,
 )
 
-from lsst.ts.guitool import TabTemplate, create_group_box, create_label
+from lsst.ts.guitool import TabTemplate
 
+from .control_panel import ControlPanel
 from .tab import (
     TabAirHandling,
     TabAlarms,
@@ -57,14 +57,49 @@ from .tab import (
 
 
 class MainWindow(QMainWindow):
-    """Main window of the Dynalene GUI."""
+    """Main window of the Dynalene GUI.
 
-    def __init__(self) -> None:
+    Parameters
+    ----------
+    is_output_log_to_file : `bool`
+        Is outputting the log messages to file or not.
+    is_output_log_on_screen : `bool`
+        Is outputting the log messages on screen or not.
+    log : `logging.Logger` or None, optional
+        A logger. If None, a logger will be instantiated. (the default is
+        None)
+    log_level : `int`, optional
+        Logging level. (the default is `logging.WARN`)
+
+    Attributes
+    ----------
+    log : `logging.Logger`
+        A logger.
+    """
+
+    def __init__(
+        self,
+        is_output_log_to_file: bool,
+        is_output_log_on_screen: bool,
+        log: logging.Logger | None = None,
+        log_level: int = logging.WARN,
+    ) -> None:
         super().__init__()
+
+        # Set the logger
+        message_format = "%(asctime)s, %(levelname)s, %(message)s"
+        self.log = self._set_log(
+            message_format,
+            is_output_log_to_file,
+            is_output_log_on_screen,
+            log_level,
+            log=log,
+        )
+
         self.setWindowTitle("Dynalene Control")
         self.setMinimumSize(300, 560)  # width, height
 
-        # Disable maximize and minimize buttons
+        # Disable the Qt close button
         self.setWindowFlags(
             Qt.WindowType.Window
             | Qt.WindowType.WindowMinimizeButtonHint
@@ -73,7 +108,6 @@ class MainWindow(QMainWindow):
 
         self._add_tool_bar()
 
-        # Style sheet to mimic classic native desktop look
         self.setStyleSheet("""
             QMainWindow {
                 background-color: #e8e8e8;
@@ -120,51 +154,8 @@ class MainWindow(QMainWindow):
             }
         """)
 
-        # Date and Time Container
-        date_time_layout = QFormLayout()
-        date_time_group = create_group_box("", date_time_layout)
-
-        self.date_label = create_label()
-        self.time_label = create_label()
-
-        date_time_layout.addRow("Date:", self.date_label)
-        date_time_layout.addRow("Time:", self.time_label)
-        date_time_layout.setLabelAlignment(Qt.AlignLeft)
-
-        # Summary Container
-        summary_layout = QFormLayout()
-        summary_group = create_group_box("Summary", summary_layout)
-        summary_layout.setLabelAlignment(Qt.AlignLeft)
-
-        # System Status Text + Status Light Container
-        self.system_state = create_label("INITIALIZED")
-
-        self.status_light = create_label()
-        self.status_light.setObjectName("status_light")
-        self.status_light.setFixedSize(60, 16)  # Width, Height
-
-        status_container = QWidget()
-        status_layout = QHBoxLayout(status_container)
-        status_layout.setContentsMargins(0, 0, 0, 0)
-        status_layout.setSpacing(8)
-
-        status_layout.addWidget(self.system_state)
-        status_layout.addWidget(self.status_light)
-        status_layout.addStretch()  # Keeps light next to the text
-
-        # User Profile and Dropdown
-        self.selected_user = create_label("Operator")
-        self.select_user = QComboBox()
-        self.select_user.addItems(["Operator", "Engineer", "Admin"])
-
-        # Add fields to Summary box
-        summary_layout.addRow("System State:", status_container)
-        summary_layout.addRow("User Profile:", self.selected_user)
-        summary_layout.addRow("Users:", self.select_user)
-
-        # Action Buttons
-        self.switch_user = QPushButton("Switch User")
-        self.logout = QPushButton("Logout")
+        # Control Panel
+        self._control_panel = ControlPanel(self.log)
 
         # Command List
         tabs: list[TabTemplate] = [
@@ -188,105 +179,156 @@ class MainWindow(QMainWindow):
         self.command_list = QListWidget()
         self.command_list.addItems(list(self._tabs))
         self.command_list.setCurrentRow(0)
-        self.command_list.itemDoubleClicked.connect(self._handle_show_tab)
-
-        # Connect signals
-        self.switch_user.clicked.connect(self.handle_switch_user)
-        self.logout.clicked.connect(self.handle_logout)
+        self.command_list.itemDoubleClicked.connect(self._callback_show_tab)
 
         # Main Layout
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(10, 5, 10, 10)
         main_layout.setSpacing(10)
-
-        main_layout.addWidget(date_time_group)
-        main_layout.addWidget(summary_group)
-        main_layout.addWidget(self.switch_user)
-        main_layout.addWidget(self.logout)
+        main_layout.addWidget(self._control_panel)
         main_layout.addWidget(self.command_list)
 
         container = QWidget()
         container.setLayout(main_layout)
         self.setCentralWidget(container)
 
-        # Setup clock timer
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.update_clock)
-        self.timer.start(1000)
-        self.update_clock()
+    def _set_log(
+        self,
+        message_format: str,
+        is_output_log_to_file: bool,
+        is_output_log_on_screen: bool,
+        level: int,
+        log: logging.Logger | None = None,
+    ) -> logging.Logger:
+        """Set the logger.
 
-    def _handle_show_tab(self, item: QListWidgetItem) -> None:
+        Parameters
+        ----------
+        message_format : `str`
+            Format of the message.
+        is_output_log_to_file : `bool`
+            Is outputting the log messages to file or not.
+        is_output_log_on_screen : `bool`
+            Is outputting the log messages on screen or not.
+        level : `int`
+            Logging level.
+        log : `logging.Logger` or None, optional
+            A logger. If None, a logger will be instantiated. (the default is
+            None)
+
+        Returns
+        -------
+        log : `logging.Logger`
+            A logger.
+        """
+
+        if log is None:
+            log = logging.getLogger(type(self).__name__)
+        else:
+            log = log.getChild(type(self).__name__)
+
+        if is_output_log_to_file:
+            logging.basicConfig(
+                filename=self._get_log_file_name(),
+                format=message_format,
+            )
+        else:
+            logging.basicConfig(
+                format=message_format,
+            )
+
+        if is_output_log_on_screen:
+            log.addHandler(logging.StreamHandler(sys.stdout))
+
+        log.setLevel(level)
+
+        return log
+
+    def _get_log_file_name(self, default_log_dir: str = "/rubin/dynalene/log") -> pathlib.Path:
+        """Get the log file name.
+
+        Parameters
+        ----------
+        default_log_dir : `str`, optional
+            Default log directory. (the default is "/rubin/dynalene/log")
+
+        Returns
+        -------
+        `pathlib.Path`
+            Log file name.
+        """
+
+        log_dir = pathlib.Path(default_log_dir)
+        if not log_dir.is_dir():
+            print(
+                (f"Default log directory: {default_log_dir} does not exist. Use the home directory instead.")
+            )
+            log_dir = pathlib.Path.home()
+
+        name = "log_%s.txt" % datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
+
+        return log_dir / name
+
+    def _callback_show_tab(self, item: QListWidgetItem) -> None:
         """Show the window of the double-clicked item.
+
         Parameters
         ----------
         item : `PySide6.QtWidgets.QListWidgetItem`
             Double-clicked item.
         """
+
         tab = self._tabs.get(item.text())
         if tab is None:
-            print(f"Not implemented yet: {item.text()}")
+            self.log.warning(f"Not implemented yet: {item.text()}")
             return
         tab.show()
         tab.raise_()
-
-    def update_clock(self) -> None:
-        now = QDateTime.currentDateTime()
-        self.date_label.setText(now.toString("MM/dd/yy"))
-        self.time_label.setText(now.toString("hh:mm AP"))
-
-    def handle_switch_user(self) -> None:
-        current_selection = self.select_user.currentText()
-        self.selected_user.setText(current_selection)
-
-    def handle_logout(self) -> None:
-        print("Logout clicked")
 
     def _add_tool_bar(self) -> None:
         """Add the tool bar."""
 
         tool_bar = self.addToolBar("ToolBar")
 
-        action_exit = tool_bar.addAction("Exit", self._handle_exit)
+        action_exit = tool_bar.addAction("Exit", self._callback_exit)
         action_exit.setToolTip("Exit the application")
 
-        action_connect = tool_bar.addAction("Connect", self._handle_connect)
+        action_connect = tool_bar.addAction("Connect", self._callback_connect)
         action_connect.setToolTip("Connect to the dynalene controller")
 
-        action_disconnect = tool_bar.addAction("Disconnect", self._handle_disconnect)
+        action_disconnect = tool_bar.addAction("Disconnect", self._callback_disconnect)
         action_disconnect.setToolTip("Disconnect and close all tasks")
 
-        action_settings = tool_bar.addAction("Settings", self._handle_settings)
+        action_settings = tool_bar.addAction("Settings", self._callback_settings)
         action_settings.setToolTip("Show the application settings")
 
-    def _handle_exit(self) -> None:
+    def _callback_exit(self) -> None:
         """Exit the application."""
 
         reply = QMessageBox.question(
             self,
-            "Exit Confirmation",  # Window Tittle
+            "Exit Confirmation",  # Window Title
             "Are you sure you want to exit?",  # Message Text
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             defaultButton=QMessageBox.StandardButton.No,  # Default focused button
         )
 
-        # Check wich button the user clicked
+        # Check which button the user clicked
         if reply == QMessageBox.StandardButton.Yes:
-            print("Exiting...")
+            self.log.info("Exiting the application.")
             sys.exit()
-        else:
-            print("Not exiting...")
 
-    def _handle_connect(self) -> None:
+    def _callback_connect(self) -> None:
         """Connect to the dynalene controller."""
 
-        print("Connect action triggered")
+        self.log.info("Connect action triggered.")
 
-    def _handle_disconnect(self) -> None:
+    def _callback_disconnect(self) -> None:
         """Disconnect from the dynalene controller."""
 
-        print("Disconnect action triggered")
+        self.log.info("Disconnect action triggered.")
 
-    def _handle_settings(self) -> None:
+    def _callback_settings(self) -> None:
         """Show the application settings."""
 
-        print("Settings action triggered")
+        self.log.info("Settings action triggered.")
